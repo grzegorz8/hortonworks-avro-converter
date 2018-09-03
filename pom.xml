@@ -17,7 +17,7 @@
         <avro.version>1.8.1</avro.version>
         <schema.registry.version>0.5.3</schema.registry.version>
         <confluent.maven.repo>https://packages.confluent.io/maven/</confluent.maven.repo>
-        <jackson.version>2.9.6</jackson.version>
+        <jackson.version>2.7.3</jackson.version>
         <guava.version>26.0-jre</guava.version>
         <commons-configuration2.version>2.3</commons-configuration2.version>
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
@@ -116,6 +116,8 @@
                     <excludes>
                         <exclude>**/*IntegrationTest.class</exclude>
                         <exclude>**/*IntegrationSpec.class</exclude>
+                        <exclude>**/*E2ETest.class</exclude>
+                        <exclude>**/*E2ESpec.class</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -145,7 +147,7 @@
                 <artifactId>docker-compose-maven-plugin</artifactId>
                 <version>2.0.1</version>
                 <configuration>
-                    <composeFile>${project.basedir}/docker/docker-compose.yml</composeFile>
+                    <composeFile>${project.basedir}/int-tests-docker-compose.yml</composeFile>
                     <build>true</build>
                     <detachedMode>true</detachedMode>
                 </configuration>
@@ -194,25 +196,109 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>end-to-end-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.dkanejs.maven.plugins</groupId>
+                        <artifactId>docker-compose-maven-plugin</artifactId>
+                        <version>2.0.1</version>
+                        <configuration>
+                            <composeFile>${project.basedir}/e2e-docker-compose.yml</composeFile>
+                            <build>true</build>
+                            <detachedMode>true</detachedMode>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-compose-up</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>up</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-compose-down</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>down</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Wait until docker-compose containers are up and fully functional.
+                    docker-compose-maven-plugin does not provide such functionality yet:
+                    https://github.com/dkanejs/docker-compose-maven-plugin/issues/13
+                    Therefore, we need to sleep for some reasonable time before running tests.
+                    -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>wait-for-docker-containers</id>
+                                <phase>pre-integration-test</phase>
+                                <configuration>
+                                    <target>
+                                        <sleep seconds="15"/>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.22.0</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <includes>
+                                        <include>**/*E2ETest.class</include>
+                                        <include>**/*E2ESpec.class</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencies>
+                <!-- Kafka -->
+                <dependency>
+                    <groupId>org.apache.kafka</groupId>
+                    <artifactId>kafka-clients</artifactId>
+                    <version>${kafka.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <dependencies>
         <!-- Kafka Connect -->

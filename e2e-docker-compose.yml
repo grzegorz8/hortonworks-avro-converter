@@ -1,0 +1,66 @@
+version: '3'
+services:
+  zookeeper:
+    image: zookeeper:latest
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:5.0.0
+    ports:
+      - 9092:9092
+    links:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  schema-registry:
+    build: end-to-end-tests/docker/schema-registry
+    image: schema-registry-test
+    ports:
+      - 9090:9090
+    expose:
+      - 9090
+
+  mysql:
+    image: debezium/example-mysql:0.9
+    ports:
+     - 3306:3306
+    expose:
+     - 3306
+    environment:
+      MYSQL_ROOT_PASSWORD: Passw0rd!
+      MYSQL_USER: mysqluser
+      MYSQL_PASSWORD: mysqlpw
+
+  connect:
+    build:
+      context: ./
+      dockerfile: end-to-end-tests/docker/kafka-connect/Dockerfile
+    ports:
+     - 8083:8083
+     - 5005:5005
+    expose:
+     - 8083
+    links:
+     - kafka
+     - zookeeper
+     - schema-registry
+     - mysql
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER: io.sqooba.avro.AvroConverter
+      VALUE_CONVERTER: io.sqooba.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:9090/api/v1
+      CONNECT_KEY_CONVERTER_SCHEMA_NAME_KEY_SUFFIX: -key
+      CONNECT_KEY_CONVERTER_SCHEMA_NAME_VALUE_SUFFIX: -value
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:9090/api/v1
+      CONNECT_VALUE_CONVERTER_SCHEMA_NAME_KEY_SUFFIX: -key
+      CONNECT_VALUE_CONVERTER_SCHEMA_NAME_VALUE_SUFFIX: -value

@@ -2,3 +2,4 @@
 /.idea
 *.iml
 .DS_STORE
+dependency-reduced-pom.xml
