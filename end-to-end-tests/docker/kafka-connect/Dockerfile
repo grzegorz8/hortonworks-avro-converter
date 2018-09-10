@@ -4,4 +4,4 @@ RUN     curl -o /kafka/libs/jersey-media-json-jackson-2.27.jar   http://central.
         curl -o /kafka/libs/jersey-entity-filtering-2.27.jar   http://central.maven.org/maven2/org/glassfish/jersey/ext/jersey-entity-filtering/2.27/jersey-entity-filtering-2.27.jar
 
 RUN     mkdir /kafka/connect/hortonworks-avro-converter
-ADD     target/hortonworks-avro-converter-1.0-SNAPSHOT.jar /kafka/connect/hortonworks-avro-converter/
+ADD     target/kconnect-hortonworks-avro-converter-1.0-SNAPSHOT.jar /kafka/connect/kconnect-hortonworks-avro-converter/
