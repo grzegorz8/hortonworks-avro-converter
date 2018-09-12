@@ -9,7 +9,7 @@ services:
     image: confluentinc/cp-kafka:5.0.0
     ports:
       - 9092:9092
-    links:
+    depends_on:
       - zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
