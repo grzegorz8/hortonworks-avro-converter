@@ -1,11 +1,12 @@
 version: '3'
 services:
   zookeeper:
+    container_name: zookeeper
     image: zookeeper:latest
     ports:
       - 2181:2181
-
   kafka:
+    container_name: kafka
     image: confluentinc/cp-kafka:5.0.0
     ports:
       - 9092:9092
@@ -19,6 +20,7 @@ services:
   schema-registry:
     build: integration-tests/docker/schema-registry
     image: schema-registry-test
+    container_name: schema-registry
     ports:
       - 9090:9090
     expose:
