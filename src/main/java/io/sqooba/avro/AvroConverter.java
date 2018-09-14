@@ -43,11 +43,22 @@ public class AvroConverter implements Converter {
   @Override
   public byte[] fromConnectData(String topic, Schema schema, Object value) {
     Object object = avroData.fromConnectData(schema, value);
+    /*
+     * Nulls represent deletes. In addition, Kafka has a special meaning for deletion in a topic, especially
+     * with log compaction enables.
+     * We need to bypass schema registration for null.
+     */
+    if (object == null) {
+      return null;
+    }
     return serializer.serialize(topic, object);
   }
 
   @Override
   public SchemaAndValue toConnectData(String topic, byte[] value) {
+    if (value == null) {
+      return SchemaAndValue.NULL;
+    }
     Object deserialized = deserializer.deserialize(topic, value);
     if (deserialized == null) {
       return SchemaAndValue.NULL;

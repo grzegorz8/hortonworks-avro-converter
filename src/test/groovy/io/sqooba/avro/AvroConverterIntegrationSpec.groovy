@@ -62,6 +62,29 @@ class AvroConverterIntegrationSpec extends Specification {
         schemaAndValue.schema() == schema
     }
 
+    def "should handle nulls representing deletes"() {
+        given:
+        String topicName = 'null-test'
+        and:
+        Schema schema = SchemaBuilder.struct()
+                .optional()
+                .name('TestObject')
+                .field('int32', Schema.INT32_SCHEMA)
+                .field('string', Schema.STRING_SCHEMA)
+                .build()
+        Struct struct = new Struct(schema)
+                .put('int32', 12)
+                .put('string', 'foo')
+        converter.fromConnectData(topicName, schema, struct)
+
+        when:
+        byte[] serializedObject = converter.fromConnectData(topicName, schema, null)
+
+        then:
+        SchemaAndValue schemaAndValue = converter.toConnectData(topicName, serializedObject)
+        schemaAndValue == SchemaAndValue.NULL
+    }
+
     def "should preserve schema version"() {
         given:
         String topicName = 'dummy2'
