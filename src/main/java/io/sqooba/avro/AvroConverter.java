@@ -14,30 +14,35 @@ import java.util.Map;
 
 public class AvroConverter implements Converter {
 
+  private final ConfigTransformer configTransformer;
   private SchemaRegistryClient client;
   private KafkaAvroSerializer serializer;
   private KafkaAvroDeserializer deserializer;
   private AvroData avroData;
 
   public AvroConverter() {
+    this.configTransformer = new ConfigTransformer();
   }
 
   @VisibleForTesting
   AvroConverter(SchemaRegistryClient client) {
+    this.configTransformer = new ConfigTransformer();
     this.client = client;
   }
 
   @Override
   public void configure(Map<String, ?> configs, boolean isKey) {
+    Map<String, Object> transformedConfig = configTransformer.transform(configs);
+
     if (client == null) {
-      client = new SchemaRegistryClient(configs);
+      client = new SchemaRegistryClient(transformedConfig);
     }
 
-    avroData = new AvroData(AvroDataConfig.ofProperties(configs));
+    avroData = new AvroData(AvroDataConfig.ofProperties(transformedConfig));
     serializer = new KafkaAvroSerializer(client);
     deserializer = new KafkaAvroDeserializer(client);
-    serializer.configure(configs, isKey);
-    deserializer.configure(configs, isKey);
+    serializer.configure(transformedConfig, isKey);
+    deserializer.configure(transformedConfig, isKey);
   }
 
   @Override
