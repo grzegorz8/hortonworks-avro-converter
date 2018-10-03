@@ -5,6 +5,7 @@ import com.hortonworks.registries.schemaregistry.SchemaCompatibility;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hortonworks.registries.schemaregistry.serdes.avro.AbstractAvroSnapshotSerializer.SERDES_PROTOCOL_VERSION;
 import static com.hortonworks.registries.schemaregistry.serdes.avro.kafka.KafkaAvroSerializer.SCHEMA_COMPATIBILITY;
 import static java.util.stream.Collectors.toMap;
 
@@ -17,6 +18,12 @@ class ConfigTransformer {
     if (configs.containsKey(SCHEMA_COMPATIBILITY)) {
       if (configs.get(SCHEMA_COMPATIBILITY) instanceof String) {
         result.put(SCHEMA_COMPATIBILITY, SchemaCompatibility.valueOf((String) configs.get(SCHEMA_COMPATIBILITY)));
+      }
+    }
+    // serdes.protocol.version should be a number.
+    if (configs.containsKey(SERDES_PROTOCOL_VERSION)) {
+      if (configs.get(SERDES_PROTOCOL_VERSION) instanceof String) {
+        result.put(SERDES_PROTOCOL_VERSION, Integer.valueOf((String) configs.get(SERDES_PROTOCOL_VERSION)));
       }
     }
 
